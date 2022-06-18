@@ -21,8 +21,10 @@ namespace GenericParsingLibrary
         /// <summary>
         /// Gets or sets the chars that define the default boundary between sequences such as words and numbers.
         /// A sequence will stop when it encounters one of the following: White space, boundary char, EOF.
+        /// <para/>
+        /// If blank at time of construction it will generated based on <see cref="Symbols"/>.
         /// </summary>
-        public virtual string BoundaryChars { get; set; } = "-=+*/{}()[]!;,./%*";
+        public virtual string BoundaryChars { get; set; } = string.Empty;//"-=+*/{}()[]!;,./%*";
         public virtual string WhiteSpaceCharacters { get; set; } = " \t\r\f\n";
         /// <summary>
         /// Gets or sets the string that indicates the start of a line comment.
@@ -36,6 +38,7 @@ namespace GenericParsingLibrary
         /// Valid chars when searching for keywords. If blank at time of construction it will be generated based on <see cref="Keywords"/>.
         /// </summary>
         public virtual string KeywordChars { get; set; } = string.Empty;
+        public virtual bool CaseSensitiveKeywords { get; set; } = true;
         public virtual string StringBoundaryCharacters { get; set; } = "\"";
         public virtual string IdentifierStartCharacters { get; set; } = "_" + AlphaChars;
         public virtual string IdentifierCharacters { get; set; } = "_" + AlphaChars + DigitChars;
@@ -48,8 +51,6 @@ namespace GenericParsingLibrary
         /// Maps a <see cref="string"/> to custom <see cref="Action"/> functions allowing the tokenizer to defer to it when the <see cref="string"/> is encountered. 
         /// </summary>
         public virtual Dictionary<string, Action<GenericTokenizer>> CustomHandlers { get; set; } = new();
-        public virtual List<GenericToken> Tokens { get; private set; } = new();
-        public GenericToken? LastToken { get; private set; }
 
         public virtual bool AllowCharacterEscaping { get; set; } = true;
         public virtual bool AutomaticallyConvertEscapedCharacters { get; set; } = true;
@@ -66,6 +67,8 @@ namespace GenericParsingLibrary
         public virtual string ValidChars { get; set; } = String.Empty;
 
         public string Source { get; protected set; }
+        public virtual List<GenericToken> Tokens { get; private set; } = new();
+        public GenericToken? LastToken { get; private set; }
         public char CurrentChar
         {
             get
@@ -102,9 +105,13 @@ namespace GenericParsingLibrary
 
             //Source = source.Trim() + '\n';
             Source = source;
-            if (KeywordChars == String.Empty && Keywords.Length > 0)
+            if (KeywordChars == string.Empty && Keywords.Length > 0)
             {
-                KeywordChars = string.Concat(Keywords).Distinct().ToString() + IdentifierCharacters;
+                KeywordChars = new string(string.Concat(Keywords).Distinct().ToArray()) + IdentifierCharacters;
+            }
+            if (BoundaryChars == string.Empty && Symbols.Length > 0)
+            {
+                BoundaryChars += new string(string.Concat(Symbols).Distinct().ToArray());
             }
         }
 
@@ -261,10 +268,11 @@ namespace GenericParsingLibrary
 
             if (AutoSkipGarbage) SkipGarbage();
             var str = new StringBuilder();
-            while (!EOF && !boundaryChars.Contains(CurrentChar) && (allowWhiteSpace || !IsWhiteSpace(CurrentChar)))
+            while (!EOF && !boundaryChars.Contains(CurrentChar) && (validChars == string.Empty || validChars.Contains(CurrentChar)) && (allowWhiteSpace || !IsWhiteSpace(CurrentChar)))
             {
                 if (invalidChars.Contains(CurrentChar)) throw SyntaxError($"Invalid character \"{CurrentChar}\", expecting {expecting}");
-                if (validChars != "" && !validChars.Contains(CurrentChar)) throw SyntaxError($"Invalid character \"{CurrentChar}\", expecting {expecting}");
+                // valid chars shouldn't throw exception when not encountered, just stop gathering (update doc)
+                //if (validChars != "" && !validChars.Contains(CurrentChar)) throw SyntaxError($"Invalid character \"{CurrentChar}\", expecting {expecting}");
 
                 string escape;
                 if (allowEscaping.Value && (escape = NextEscapeSequence()) != "")
@@ -708,20 +716,33 @@ namespace GenericParsingLibrary
         public virtual bool TokenizeKeyword()
         {
             // Checking for valid keyword char first hopefully improves performance.
-            if (KeywordChars.Contains(CurrentChar))
+            var kwdChars = KeywordChars;
+            var currentChar = CurrentChar;
+            if (!CaseSensitiveKeywords)
+            {
+                kwdChars = kwdChars.ToLower();
+                currentChar = currentChar.ToString().ToLower()[0];
+            }
+            if (kwdChars.Contains(currentChar))
             {
                 foreach (string keyword in Keywords)
                 {
                     var prevIndex = Index;
-                    // This might need to be in try-catch
-                    var kwd = NextWord("keyword", validChars: KeywordChars, allowEscaping: false);
-                    if (kwd == keyword)
-                    {
-                        // kwd is added instead of keyword to preserve casing.
-                        AddToken(TokenType.Keyword, kwd);
-                        return true;
-                    }
-                    Index = prevIndex;
+                    // try-catch because 
+                    //try
+                    //{
+                        var kwd = NextWord("keyword", validChars: KeywordChars, allowEscaping: false);
+                        if (kwd == keyword || (!CaseSensitiveKeywords && kwd.ToLower() == keyword.ToLower()))
+                        {
+                            // kwd is added instead of keyword to preserve casing.
+                            AddToken(TokenType.Keyword, kwd);
+                            return true;
+                        }
+                    //}
+                    //catch (TokenizerSyntaxException)
+                    //{
+                        Index = prevIndex;
+                    //}
                 }
             }
             return false;
