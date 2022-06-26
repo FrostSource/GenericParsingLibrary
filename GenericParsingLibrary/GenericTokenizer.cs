@@ -11,13 +11,13 @@ namespace GenericParsingLibrary
     //TODO: Allow characters to stop enclosed, like \n
     public class GenericTokenizer
     {
-        public static string AlphaChars { get; protected set; } = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        public static string DigitChars { get; protected set; } = "1234567890";
-        public static string HexChars { get; protected set; } = DigitChars + "abcdefABCDEF";
+        public static string AlphaChars { get; private set; } = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        public static string DigitChars { get; private set; } = "1234567890";
+        public static string HexChars { get; private set; } = DigitChars + "abcdefABCDEF";
         /// <summary>
         /// Gets or sets if white space should be skipped by the tokenizer when finding elements such as numbers or words.
         /// </summary>
-        public virtual bool AutoSkipGarbage { get; protected set; } = true;
+        public virtual bool AutoSkipGarbage { get; private set; } = true;
         /// <summary>
         /// Gets or sets the chars that define the default boundary between sequences such as words and numbers.
         /// A sequence will stop when it encounters one of the following: White space, boundary char, EOF.
@@ -48,8 +48,8 @@ namespace GenericParsingLibrary
         /// Maps a <see cref="string"/> to custom <see cref="Action"/> functions allowing the tokenizer to defer to it when the <see cref="string"/> is encountered. 
         /// </summary>
         public virtual Dictionary<string, Action<GenericTokenizer>> CustomHandlers { get; set; } = new();
-        public virtual List<GenericToken> Tokens { get; private set; } = new();
-        public GenericToken? LastToken { get; private set; }
+        protected virtual List<GenericToken> Tokens { get; private set; } = new();
+        protected GenericToken? LastToken { get; private set; }
 
         public virtual bool AllowCharacterEscaping { get; set; } = true;
         public virtual bool AutomaticallyConvertEscapedCharacters { get; set; } = true;
@@ -65,8 +65,8 @@ namespace GenericParsingLibrary
         /// </summary>
         public virtual string ValidChars { get; set; } = String.Empty;
 
-        public string Source { get; protected set; }
-        public char CurrentChar
+        protected string Source { get; private set; }
+        protected char CurrentChar
         {
             get
             {
@@ -76,7 +76,7 @@ namespace GenericParsingLibrary
                     return Source[Index];
             }
         }
-        public char NextChar
+        protected char NextChar
         {
             get
             {
@@ -86,14 +86,14 @@ namespace GenericParsingLibrary
                     return Source[Index + 1];
             }
         }
-        public int Index { get; protected set; } = 0;
-        public int LineNumber { get; protected set; } = 1;
-        public int LinePosition { get; protected set; } = 1;
-        public int PreviousLineNumber { get; protected set; } = 1;
-        public int PreviousLinePosition { get; protected set; } = 1;
-        public int SavedLineNumber { get; protected set; } = 1;
-        public int SavedLinePosition { get; protected set; } = 1;
-        public bool EOF { get => Index >= Source.Length; }
+        protected int Index { get; private set; } = 0;
+        protected int LineNumber { get; private set; } = 1;
+        protected int LinePosition { get; private set; } = 1;
+        protected int PreviousLineNumber { get; private set; } = 1;
+        protected int PreviousLinePosition { get; private set; } = 1;
+        protected int SavedLineNumber { get; private set; } = 1;
+        protected int SavedLinePosition { get; private set; } = 1;
+        protected bool EOF { get => Index >= Source.Length; }
 
         public GenericTokenizer(string source)
         {
@@ -102,9 +102,9 @@ namespace GenericParsingLibrary
 
             //Source = source.Trim() + '\n';
             Source = source;
-            if (KeywordChars == String.Empty && Keywords.Length > 0)
+            if (KeywordChars == string.Empty && Keywords.Length > 0)
             {
-                KeywordChars = string.Concat(Keywords).Distinct().ToString() + IdentifierCharacters;
+                KeywordChars = new string(string.Concat(Keywords).Distinct().ToArray()) + IdentifierCharacters;
             }
         }
 
@@ -112,7 +112,7 @@ namespace GenericParsingLibrary
         /// Saves the current line number and position for later retrieval.
         /// Usually for more accurate syntax error messages.
         /// </summary>
-        public void SavePosition()
+        protected void SavePosition()
         {
             SavedLineNumber = LineNumber;
             SavedLinePosition = LinePosition;
@@ -121,7 +121,7 @@ namespace GenericParsingLibrary
         /// Advances the next character in the source text.
         /// </summary>
         /// <exception cref="TokenizerEOFException">Thrown when the end of the source is found instead of a character.</exception>
-        public void Advance()
+        protected void Advance()
         {
             if (EOF) throw new TokenizerEOFException();
             PreviousLineNumber = LineNumber;
@@ -142,7 +142,7 @@ namespace GenericParsingLibrary
         /// </summary>
         /// <param name="count"></param>
         /// <exception cref="TokenizerEOFException">Thrown when the end of the source is found instead of a character.</exception>
-        public void Advance(int count)
+        protected void Advance(int count)
         {
             for (int i = 0; i < count; i++)
             {
@@ -156,7 +156,7 @@ namespace GenericParsingLibrary
         /// The next <see cref="char"/> or \0 if at the end.
         /// </returns>
         /// <exception cref="TokenizerEOFException">Thrown when the end of the source is found instead of a character.</exception>
-        public char Next()
+        protected char Next()
         {
             if (AutoSkipGarbage) SkipGarbage();
             if (EOF) return '\0';
@@ -168,7 +168,7 @@ namespace GenericParsingLibrary
         /// Gets the previous <see cref="char"/> in the source text.
         /// </summary>
         /// <returns>The previous <see cref="char"/> or \0 if at the beginning.</returns>
-        public char Previous()
+        protected char Previous()
         {
             if (Index < 0)
                 return '\0';
@@ -178,7 +178,7 @@ namespace GenericParsingLibrary
         /// Returns the next <see cref="char"/> in the source text without advancing.
         /// </summary>
         /// <returns></returns>
-        public char Peek()
+        protected char Peek()
         {
             //var index = Index;
             //TODO: This needs to implement a versin of SkipGarbage without consuming!
@@ -200,7 +200,7 @@ namespace GenericParsingLibrary
         /// </summary>
         /// <param name="str"></param>
         /// <returns>True if <paramref name="str"/> is next in the current position of the source text.</returns>
-        public bool IsNext(string str)
+        protected bool IsNext(string str)
         {
             if (str == "") return false;
             if (str.Length > Source.Length - Index) return false;
@@ -215,7 +215,7 @@ namespace GenericParsingLibrary
             Index = prevIndex;
             return ret;
         }
-        public bool IsNextNoSkip(string str)
+        protected bool IsNextNoSkip(string str)
         {
             if (str == "") return false;
             if (str.Length > Source.Length - Index) return false;
@@ -227,7 +227,7 @@ namespace GenericParsingLibrary
         /// <param name="str"></param>
         /// <exception cref="TokenizerEOFException">Thrown when the tokenizer unexpectedly reaches the end of the source.</exception>
         /// <exception cref="TokenizerSyntaxException">Thrown when <paramref name="str"/> is not next in the source.</exception>
-        public void Eat(string str)
+        protected void Eat(string str)
         {
             if (str.Length > Source.Length - Index)
             {
@@ -251,7 +251,7 @@ namespace GenericParsingLibrary
         /// <param name="allowWhiteSpace"></param>
         /// <param name="allowEscaping"></param>
         /// <returns></returns>
-        public virtual string NextWord(string expecting = "", string? boundaryChars = null, string? invalidChars = null, string? validChars = null, bool failOnEmpty = true, bool allowWhiteSpace = false, bool? allowEscaping = null)
+        protected virtual string NextWord(string expecting = "", string? boundaryChars = null, string? invalidChars = null, string? validChars = null, bool failOnEmpty = true, bool allowWhiteSpace = false, bool? allowEscaping = null)
         {
             boundaryChars ??= BoundaryChars;
             invalidChars ??= InvalidChars;
@@ -261,10 +261,10 @@ namespace GenericParsingLibrary
 
             if (AutoSkipGarbage) SkipGarbage();
             var str = new StringBuilder();
-            while (!EOF && !boundaryChars.Contains(CurrentChar) && (allowWhiteSpace || !IsWhiteSpace(CurrentChar)))
+            while (!EOF && !boundaryChars.Contains(CurrentChar) && validChars.Contains(CurrentChar) && (allowWhiteSpace || !IsWhiteSpace(CurrentChar)))
             {
                 if (invalidChars.Contains(CurrentChar)) throw SyntaxError($"Invalid character \"{CurrentChar}\", expecting {expecting}");
-                if (validChars != "" && !validChars.Contains(CurrentChar)) throw SyntaxError($"Invalid character \"{CurrentChar}\", expecting {expecting}");
+                //if (validChars != "" && !validChars.Contains(CurrentChar)) throw SyntaxError($"Invalid character \"{CurrentChar}\", expecting {expecting}");
 
                 string escape;
                 if (allowEscaping.Value && (escape = NextEscapeSequence()) != "")
@@ -295,7 +295,7 @@ namespace GenericParsingLibrary
         /// <returns></returns>
         /// <exception cref="TokenizerEOFException">Thrown when the end of the source is found instead of a character.</exception>
         /// <exception cref="TokenizerSyntaxException">Thrown when <paramref name="boundaryChar"/> is not at the beginning or end.</exception>
-        public virtual string NextEnclosed(char boundaryChar = '"', string? invalidChars = null)
+        protected virtual string NextEnclosed(char boundaryChar = '"', string? invalidChars = null)
         {
             invalidChars ??= InvalidChars;
 
@@ -318,7 +318,7 @@ namespace GenericParsingLibrary
         /// Gets the next integer in the source text
         /// </summary>
         /// <returns></returns>
-        public virtual string NextInteger()
+        protected virtual string NextInteger()
         {
             if (AutoSkipGarbage) SkipGarbage();
 
@@ -330,7 +330,7 @@ namespace GenericParsingLibrary
         /// </summary>
         /// <remarks>May return a similar result to <see cref="NextInteger"/> if no decimal point is found but a valid number is.</remarks>
         /// <returns></returns>
-        public virtual string NextDecimal(char? decimalChar = null)
+        protected virtual string NextDecimal(char? decimalChar = null)
         {
             decimalChar ??= DecimalChar;
 
@@ -359,7 +359,7 @@ namespace GenericParsingLibrary
         /// var name = tokenizer.NextSequence("_abc","_abc123");
         /// </code>
         /// </example>
-        public virtual string NextSequence(string validStartChars, string validChars)
+        protected virtual string NextSequence(string validStartChars, string validChars)
         {
             if (AutoSkipGarbage) SkipWhiteSpace();
 
@@ -377,7 +377,7 @@ namespace GenericParsingLibrary
         /// This method does not strip any leading garbage by default.
         /// </remarks>
         /// <returns>The next escape sequence with the leading marking character, or blank if not found.</returns>
-        public virtual string NextEscapeSequence()
+        protected virtual string NextEscapeSequence()
         {
             if (AllowCharacterEscaping && CurrentChar == EscapeCharacter)
             {
@@ -431,7 +431,7 @@ namespace GenericParsingLibrary
         /// </summary>
         /// <param name="ch"></param>
         /// <returns>The <see cref="string"/> up until the next <paramref name="ch"/> or empty if nothing found. </returns>
-        public string NextUntil(char ch)
+        protected string NextUntil(char ch)
         {
             var sb = new StringBuilder();
             while (!EOF && CurrentChar != ch)
@@ -444,7 +444,7 @@ namespace GenericParsingLibrary
         /// Gets all characters left on the current line.
         /// </summary>
         /// <returns></returns>
-        public string RestOfLine()
+        protected string RestOfLine()
         {
             var sb = new StringBuilder();
             while (!EOF && CurrentChar != '\n' && CurrentChar != '\r')
@@ -460,13 +460,13 @@ namespace GenericParsingLibrary
         /// </summary>
         /// <param name="regex"></param>
         /// <returns></returns>
-        public string NextRegex(string regex)
+        protected string NextRegex(string regex)
         {
             var rx = new Regex(@"$" + regex);
             var match = rx.Match(Source);
             return match.Value;
         }
-        public void SkipGarbage()
+        protected void SkipGarbage()
         {
             while (IsWhiteSpace(CurrentChar) || IsNextNoSkip(CommentLineStart) || IsNextNoSkip(CommentBlockStart))
             {
@@ -475,11 +475,11 @@ namespace GenericParsingLibrary
                 SkipCommentBlock();
             }
         }
-        public virtual void SkipCommentLine()
+        protected virtual void SkipCommentLine()
         {
             if (IsNextNoSkip(CommentLineStart)) SkipLine();
         }
-        public virtual void SkipCommentBlock()
+        protected virtual void SkipCommentBlock()
         {
             if (IsNextNoSkip(CommentBlockStart))
             {
@@ -491,7 +491,7 @@ namespace GenericParsingLibrary
         /// <summary>
         /// Advances the source string to the first non-whitespace character.
         /// </summary>
-        public virtual void SkipWhiteSpace()
+        protected virtual void SkipWhiteSpace()
         {
             while (!EOF && IsWhiteSpace(CurrentChar))
             {
@@ -502,7 +502,7 @@ namespace GenericParsingLibrary
         /// Gets the index at the end of any current whitespace. That is, the first index with a non-whitespace character.
         /// </summary>
         /// <returns></returns>
-        public int NextIndexAfterWhiteSpace()
+        protected int NextIndexAfterWhiteSpace()
         {
             var index = Index;
             while (index < Source.Length && IsWhiteSpace(Source[index]))
@@ -514,7 +514,7 @@ namespace GenericParsingLibrary
         /// <summary>
         /// Moves to the next line in the source if one exists.
         /// </summary>
-        public void SkipLine()
+        protected void SkipLine()
         {
             while (!EOF && CurrentChar != '\n')
             {
@@ -523,12 +523,12 @@ namespace GenericParsingLibrary
             if (CurrentChar == '\n') Advance();
         }
 
-        public bool IsWhiteSpace(char ch)
+        protected bool IsWhiteSpace(char ch)
         {
             //return Char.IsWhiteSpace(ch);
             return WhiteSpaceCharacters.Contains(ch);
         }
-        public string LinePositionFormatted()
+        protected string LinePositionFormatted()
         {
             return $"line {LineNumber}, pos {LinePosition}";
         }
@@ -597,15 +597,15 @@ namespace GenericParsingLibrary
         {
             return new TokenizerSyntaxException(ReplaceSpecialCharsInString(message), lineNumber, linePosition);
         }
-        public TokenizerSyntaxException SyntaxError(string message)
+        protected TokenizerSyntaxException SyntaxError(string message)
         {
             return SyntaxError(message, LineNumber, LinePosition);
         }
-        public TokenizerSyntaxException SyntaxErrorPrevious(string message)
+        protected TokenizerSyntaxException SyntaxErrorPrevious(string message)
         {
             return SyntaxError(message, PreviousLineNumber, PreviousLinePosition);
         }
-        public TokenizerSyntaxException SyntaxErrorSaved(string message)
+        protected TokenizerSyntaxException SyntaxErrorSaved(string message)
         {
             return SyntaxError(message, SavedLineNumber, SavedLinePosition);
         }
@@ -627,7 +627,7 @@ namespace GenericParsingLibrary
         /// Useful when overriding or extending <see cref="TokenizeNext"/>
         /// </summary>
         /// <returns></returns>
-        public virtual bool TokenizeIdentifier()
+        protected virtual bool TokenizeIdentifier()
         {
             if (IdentifierStartCharacters.Contains(CurrentChar))
             {
@@ -643,7 +643,7 @@ namespace GenericParsingLibrary
         /// Useful when overriding or extending <see cref="TokenizeNext"/>
         /// </summary>
         /// <returns></returns>
-        public virtual bool TokenizeNumber()
+        protected virtual bool TokenizeNumber()
         {
             if (DigitChars.Contains(CurrentChar))
             {
@@ -670,7 +670,7 @@ namespace GenericParsingLibrary
         /// Useful when overriding or extending <see cref="TokenizeNext"/>
         /// </summary>
         /// <returns></returns>
-        public virtual bool TokenizeString()
+        protected virtual bool TokenizeString()
         {
             if (StringBoundaryCharacters.Contains(CurrentChar))
             {
@@ -686,7 +686,7 @@ namespace GenericParsingLibrary
         /// Useful when overriding or extending <see cref="TokenizeNext"/>
         /// </summary>
         /// <returns></returns>
-        public virtual bool TokenizeSymbol()
+        protected virtual bool TokenizeSymbol()
         {
             foreach (string symbol in Symbols)
             {
@@ -705,7 +705,7 @@ namespace GenericParsingLibrary
         /// Useful when overriding or extending <see cref="TokenizeNext"/>
         /// </summary>
         /// <returns></returns>
-        public virtual bool TokenizeKeyword()
+        protected virtual bool TokenizeKeyword()
         {
             // Checking for valid keyword char first hopefully improves performance.
             if (KeywordChars.Contains(CurrentChar))
@@ -727,7 +727,7 @@ namespace GenericParsingLibrary
             return false;
         }
 
-        public virtual void TokenizeNext()
+        protected virtual void TokenizeNext()
         {
             if (EOF) return;
 
@@ -766,7 +766,5 @@ namespace GenericParsingLibrary
             }
             return Tokens;
         }
-
-        //public abstract IDictionary<string, dynamic> Parse();
     }
 }

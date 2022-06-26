@@ -6,13 +6,23 @@ using System.Threading.Tasks;
 
 namespace GenericParsingLibrary
 {
+    /// <summary>
+    /// The generic parser contains properties and methods to simplify the parsing of <see cref="GenericToken"/> objects.
+    /// </summary>
+    // TODO: Turn this into an interface or inherit an interface.
     public class GenericParser
     {
-        protected List<GenericToken>? Tokens { get; set; }
-        protected int Index { get; private set; }
-        protected Stack<string> ErrorStack { get; set; } = new();
+        #region Handling tokens
         /// <summary>
-        /// Get the next token available, or null if not.
+        /// Gets or sets the list of <see cref="GenericToken"/> objects to parse through.
+        /// </summary>
+        protected List<GenericToken>? Tokens { get; set; }
+        /// <summary>
+        /// Gets the current index of <see cref="Tokens"/>.
+        /// </summary>
+        protected int Index { get; private set; }
+        /// <summary>
+        /// Gets the next token available, or null if not.
         /// </summary>
         protected GenericToken? NextToken
         {
@@ -73,7 +83,9 @@ namespace GenericParsingLibrary
                 return Tokens[Index-1];
             }
         }
+        #endregion Handling tokens
 
+        #region Consuming tokens
         /// <summary>
         /// Eat the current token waiting to be consumed.
         /// If the given <see cref="TokenType"/> doesn't match, a syntax error will be thrown.
@@ -235,24 +247,75 @@ namespace GenericParsingLibrary
             throw SyntaxError(expectedTokenTypes.ToArray(), expectedValues.ToArray());
         }
         /// <summary>
+        /// Generic version of <see cref="EitherOr(Func{bool}[])"/>
+        /// <para/>
+        /// Returns <typeparamref name="T"/> from the first function <paramref name="funcs"/> which does not throw an exception.
+        /// Every syntax exception is gathered and compiled into a single exception in the case of no function returning succesfully.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="funcs"></param>
+        /// <returns><typeparamref name="T"/> from the first successful function.</returns>
+        protected T EitherOr<T>(params Func<T>[] funcs)
+        {
+            var expectedTokenTypes = new HashSet<TokenType>();
+            var expectedValues = new HashSet<string>();
+            foreach (var func in funcs)
+            {
+                var savedIndex = Index;
+                try
+                {
+                    return func();
+                }
+                catch (ParserSyntaxException e)
+                {
+                    expectedTokenTypes.UnionWith(e.ExpectedTokenTypes);
+                    expectedValues.UnionWith(e.ExpectedValues);
+                    Index = savedIndex;
+                }
+                catch (ParserException)
+                {
+                    Index = savedIndex;
+                }
+            }
+
+            throw SyntaxError(expectedTokenTypes.ToArray(), expectedValues.ToArray());
+        }
+        /// <summary>
         /// An optional set of instructions. Will catch a syntax exception and ignore it.
         /// Passed function does not need to return anything.
         /// </summary>
         /// <param name="func"></param>
-        protected void Optional(Action func)
+        /// <returns><see langword="true"/> if no exception occured, <see langword="false"/> otherwise.</returns>
+        protected bool Optional(Action func)
         {
             var savedIndex = Index;
             try
             {
                 func();
+                return true;
             }
             catch (ParserSyntaxException)
             {
                 Index = savedIndex;
+                return false;
             }
         }
+        #endregion Consuming tokens
 
+        #region Error reporting
+        /// <summary>
+        /// Gets or sets the stack of error messages that will be reported when a parse exception falls through.
+        /// </summary>
+        protected Stack<string> ErrorStack { get; set; } = new();
+        /// <summary>
+        /// Pushes an error message onto the stack to be reported in the case of an exception being thrown.
+        /// </summary>
+        /// <param name="message"></param>
         protected void PushError(string message) => ErrorStack.Push(message);
+        /// <summary>
+        /// Pops an error off the top of the stack so it will no longer be reported when an exception is thrown.
+        /// </summary>
+        /// <returns></returns>
         protected string PopError()
         {
             if (ErrorStack.Count > 0)
@@ -291,5 +354,6 @@ namespace GenericParsingLibrary
             if (ErrorStack.Count > 0) return new ParserSyntaxException(ErrorStack.Peek(), CurrentToken);
             return new ParserEOFException(message, CurrentTokenSafe);
         }
+        #endregion Error reporting
     }
 }

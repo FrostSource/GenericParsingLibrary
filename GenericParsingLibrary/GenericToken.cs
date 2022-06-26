@@ -15,16 +15,50 @@ namespace GenericParsingLibrary
     /// </summary>
     public enum TokenType
     {
+        /// <summary>
+        /// An identifier is generally a word that does not contain whitespace, symbols or quotes.
+        /// </summary>
         Identifier,
+        /// <summary>
+        /// A keyword is a special word that cannot be used as an identifier but usually follows the same rules as an identifier.
+        /// </summary>
         Keyword,
+        /// <summary>
+        /// A symbol a char or small string that has a special purpose in a language. E.g. '=', '>=', '{', '}'
+        /// </summary>
         Symbol,
+        /// <summary>
+        /// A string is a set of characters enclosed between matching symbols, e.g. "This is a string"
+        /// </summary>
         String,
+        /// <summary>
+        /// A number is a generic version of the more specific types (like <see cref="Integer"/>.
+        /// It can be used if all numbers resolve to a single type.
+        /// </summary>
         Number,
+        /// <summary>
+        /// An integer is a whole number with no decimal places.
+        /// </summary>
         Integer,
+        /// <summary>
+        /// A float is usually a number with decimal places.
+        /// </summary>
         Float,
+        /// <summary>
+        /// A decimal is a general version of a float and can be used to denote floating point numbers of higher precision.
+        /// </summary>
         Decimal,
+        /// <summary>
+        /// A boolean is 'true' or 'false'.
+        /// </summary>
         Boolean,
+        /// <summary>
+        /// Whitespace is the "empty" space between characters and is usually not captured, but some languages might make use of it, e.g. Python.
+        /// </summary>
         WhiteSpace,
+        /// <summary>
+        /// A comment is a message left by programmers.
+        /// </summary>
         Comment
     }
 
@@ -35,7 +69,7 @@ namespace GenericParsingLibrary
     public class GenericToken
     {
         /// <summary>
-        /// Type of the token. Used mostly with <see cref="GenericParser.Eat"/>.
+        /// Type of the token. Used mostly with <see cref="GenericParser.Eat(TokenType[])"/> methods..
         /// </summary>
         public TokenType TokenType { get; private set; }
         /// <summary>

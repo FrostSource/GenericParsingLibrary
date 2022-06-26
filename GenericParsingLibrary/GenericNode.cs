@@ -6,17 +6,29 @@ using System.Threading.Tasks;
 
 namespace GenericParsingLibrary
 {
-    public class GenericNode
+    /// <summary>
+    /// Used mainly for programming languages that will generate node trees.
+    /// </summary>
+    public interface INode
     {
-        public dynamic? Value { get; private set; }
-        public GenericNode? Left { get; private set; }
-        public GenericNode? Right { get; private set; }
+        /// <summary>
+        /// Gets the value that this node represents. This can be anything and is up to the programmer to handle.
+        /// </summary>
+        public dynamic? Value { get; }
+        /// <summary>
+        /// Gets the left hand <see cref="INode"/> associated with this <see cref="INode"/>.
+        /// </summary>
+        public INode? Left { get; }
+        /// <summary>
+        /// Gets the right hand <see cref="INode"/> associated with this <see cref="INode"/>.
+        /// </summary>
+        public INode? Right { get; }
 
-        public GenericNode(dynamic? value = null, GenericNode? left = null, GenericNode? right = null)
-        {
-            Value = value;
-            Left = left;
-            Right = right;
-        }
+        //public INode(dynamic? value = null, INode? left = null, INode? right = null)
+        //{
+        //    Value = value;
+        //    Left = left;
+        //    Right = right;
+        //}
     }
 }
