@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace GenericParsingLibrary
 {
@@ -22,7 +19,7 @@ namespace GenericParsingLibrary
         /// Gets or sets the chars that define the default boundary between sequences such as words and numbers.
         /// A sequence will stop when it encounters one of the following: White space, boundary char, EOF.
         /// </summary>
-        public virtual string BoundaryChars { get; set; } = "-=+*/{}()[]!;,./%*";
+        public virtual string BoundaryChars { get; set; } = string.Empty;
         public virtual string WhiteSpaceCharacters { get; set; } = " \t\r\f\n";
         /// <summary>
         /// Gets or sets the string that indicates the start of a line comment.
@@ -36,6 +33,7 @@ namespace GenericParsingLibrary
         /// Valid chars when searching for keywords. If blank at time of construction it will be generated based on <see cref="Keywords"/>.
         /// </summary>
         public virtual string KeywordChars { get; set; } = string.Empty;
+        public virtual bool CaseSensitiveKeywords { get; set; } = true;
         public virtual string StringBoundaryCharacters { get; set; } = "\"";
         public virtual string IdentifierStartCharacters { get; set; } = "_" + AlphaChars;
         public virtual string IdentifierCharacters { get; set; } = "_" + AlphaChars + DigitChars;
@@ -105,6 +103,10 @@ namespace GenericParsingLibrary
             if (KeywordChars == string.Empty && Keywords.Length > 0)
             {
                 KeywordChars = new string(string.Concat(Keywords).Distinct().ToArray()) + IdentifierCharacters;
+            }
+            if (BoundaryChars == string.Empty && Symbols.Length > 0)
+            {
+                BoundaryChars += new string(string.Concat(Symbols).Distinct().ToArray());
             }
         }
 
@@ -261,9 +263,10 @@ namespace GenericParsingLibrary
 
             if (AutoSkipGarbage) SkipGarbage();
             var str = new StringBuilder();
-            while (!EOF && !boundaryChars.Contains(CurrentChar) && validChars.Contains(CurrentChar) && (allowWhiteSpace || !IsWhiteSpace(CurrentChar)))
+            while (!EOF && !boundaryChars.Contains(CurrentChar) && (validChars == string.Empty || validChars.Contains(CurrentChar)) && (allowWhiteSpace || !IsWhiteSpace(CurrentChar)))
             {
                 if (invalidChars.Contains(CurrentChar)) throw SyntaxError($"Invalid character \"{CurrentChar}\", expecting {expecting}");
+                // valid chars shouldn't throw exception when not encountered, just stop gathering (update doc)
                 //if (validChars != "" && !validChars.Contains(CurrentChar)) throw SyntaxError($"Invalid character \"{CurrentChar}\", expecting {expecting}");
 
                 string escape;
@@ -707,14 +710,20 @@ namespace GenericParsingLibrary
         /// <returns></returns>
         protected virtual bool TokenizeKeyword()
         {
+            var kwdChars = KeywordChars;
+            if (!CaseSensitiveKeywords)
+            {
+                //TODO: Consider putting this in constructor
+                kwdChars = kwdChars.ToLower() + kwdChars.ToUpper();
+            }
             // Checking for valid keyword char first hopefully improves performance.
-            if (KeywordChars.Contains(CurrentChar))
+            if (kwdChars.Contains(CurrentChar))
             {
                 foreach (string keyword in Keywords)
                 {
                     var prevIndex = Index;
                     // This might need to be in try-catch
-                    var kwd = NextWord("keyword", validChars: KeywordChars, allowEscaping: false);
+                    var kwd = NextWord("keyword", validChars: kwdChars, allowEscaping: false);
                     if (kwd == keyword)
                     {
                         // kwd is added instead of keyword to preserve casing.
