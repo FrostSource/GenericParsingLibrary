@@ -6,10 +6,9 @@ using System.Threading.Tasks;
 
 namespace GenericParsingLibrary
 {
-    public class GenericTokenizer : BaseTokenizer
+    public abstract class AbstractTokenizer
     {
-        public GenericTokenizer(string source) : base(source)
-        {
-        }
+        public abstract List<GenericToken> Tokens { get; set; }
+        public abstract GenericToken? LastToken { get; }
     }
 }

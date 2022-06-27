@@ -8,7 +8,7 @@ using GenericParsingLibrary;
 
 namespace IniParserExample
 {
-    internal class IniTokenizer : GenericTokenizer
+    internal class IniTokenizer : BaseTokenizer
     {
         // Our ini files only allow ; for comments. Some ini files allow # and this can be easily
         // hard coded into our custom tokenizer if desired by extending the SkipCommentLine method.
