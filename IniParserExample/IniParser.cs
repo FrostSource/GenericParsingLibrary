@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿
 using System.Text;
-using System.Threading.Tasks;
-
 using GenericParsingLibrary;
 
 /* This parser described in EBNF and some regex.
@@ -109,8 +105,8 @@ namespace IniParserExample
 
             OneOrMore(() =>
             {
-                var result = ParseSection();
-                file.Add(result.sectionName, result.sectionKeys);
+                var (sectionName, sectionKeys) = ParseSection();
+                file.Add(sectionName, sectionKeys);
             });
             return file;
         }
@@ -203,7 +199,11 @@ namespace IniParserExample
         public void Parse()
         {
             // Tokenizing needs to be done first.
-            Tokens = Tokenizer.Tokenize();
+            if (!Tokenizer.TryTokenize())
+            {
+                throw new TokenizerException(Tokenizer.ExceptionMessage);
+            }
+            Tokens = Tokenizer.Tokens;
             // Then the top level method searches the nodes to generate an ini file dictionary.
             IniFile = ParseFile();
         }
