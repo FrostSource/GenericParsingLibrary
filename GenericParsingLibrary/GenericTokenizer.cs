@@ -92,10 +92,6 @@ namespace GenericParsingLibrary
         /// </summary>
         public virtual bool UseNumberTokenOnly { get; set; } = false;
         /// <summary>
-        /// Maps a <see cref="string"/> to custom <see cref="Action"/> functions allowing the tokenizer to defer to it when the <see cref="string"/> is encountered. 
-        /// </summary>
-        public virtual Dictionary<string, Action<GenericTokenizer>> CustomHandlers { get; set; } = new();
-        /// <summary>
         /// Gets or sets if escaping is captured in strings.
         /// </summary>
         public virtual bool AllowCharacterEscaping { get; set; } = true;
@@ -891,15 +887,6 @@ namespace GenericParsingLibrary
 
             // Position is saved before tokenizing so error messages are more accurate.
             SavePosition();
-
-            foreach (var handler in CustomHandlers)
-            {
-                if (IsNextNoSkip(handler.Key))
-                {
-                    handler.Value(this);
-                    return;
-                }
-            }
 
             if (TokenizeKeyword()) return;
 
