@@ -1,21 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-using GenericParsingLibrary;
+﻿using GenericParsingLibrary;
 
 namespace IniParserExample
 {
-    internal class IniTokenizer : BaseTokenizer
+    internal class IniTokenizer : GenericTokenizer
     {
         // Our ini files only allow ; for comments. Some ini files allow # and this can be easily
         // hard coded into our custom tokenizer if desired by extending the SkipCommentLine method.
         public override string CommentLineStart { get; set; } = ";";
         // Our ini files do not have block comments
-        public override string CommentBlockStart { get; set; } = String.Empty;
-        public override string CommentBlockEnd { get; set; } = String.Empty;
+        public override string CommentBlockStart { get; set; } = string.Empty;
+        public override string CommentBlockEnd { get; set; } = string.Empty;
         // \n Is removed from white space because it is part of the language.
         public override string WhiteSpaceCharacters { get; set; } = " \t\r\f";
         // Square brackets are not boundary chars automatically, only when inside a section
@@ -36,7 +30,7 @@ namespace IniParserExample
         /// Overridden to track encounters of section start.
         /// </summary>
         /// <returns></returns>
-        public override bool TokenizeSymbol()
+        protected override bool TokenizeSymbol()
         {
             foreach (string symbol in Symbols)
             {
@@ -59,7 +53,7 @@ namespace IniParserExample
         * This tokenizer does not look for many of the things that most languages have, like strings
         * so they are stripped out in this overrided version.
         */
-        public override void TokenizeNext()
+        protected override void TokenizeNext()
         {
             // Saving the position is important in case we need to roll back.
             //SavePosition();

@@ -8,7 +8,28 @@ namespace GenericParsingLibrary
 {
     public abstract class AbstractTokenizer
     {
-        public abstract List<GenericToken> Tokens { get; set; }
-        public abstract GenericToken? LastToken { get; }
+        public List<GenericToken> Tokens { get; protected set; } = new();
+        public GenericToken? LastToken { get; protected set; }
+        public string Source { get; protected set; }
+        public string ExceptionMessage { get;protected set; }
+        protected AbstractTokenizer(string source)
+        {
+            Source = source;
+        }
+
+        public abstract void Tokenize();
+        public virtual bool TryTokenize()
+        {
+            try
+            {
+                Tokenize();
+                return true;
+            }
+            catch (TokenizerException e)
+            {
+                ExceptionMessage = e.Message;
+                return false;
+            }
+        }
     }
 }
