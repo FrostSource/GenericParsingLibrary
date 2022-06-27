@@ -9,26 +9,26 @@ namespace GenericParsingLibrary
     /// <summary>
     /// Used mainly for programming languages that will generate node trees.
     /// </summary>
-    public interface INode
+    public class GenericNode
     {
         /// <summary>
         /// Gets the value that this node represents. This can be anything and is up to the programmer to handle.
         /// </summary>
         public dynamic? Value { get; }
         /// <summary>
-        /// Gets the left hand <see cref="INode"/> associated with this <see cref="INode"/>.
+        /// Gets the left hand <see cref="GenericNode"/> associated with this <see cref="GenericNode"/>.
         /// </summary>
-        public INode? Left { get; }
+        public GenericNode? Left { get; }
         /// <summary>
-        /// Gets the right hand <see cref="INode"/> associated with this <see cref="INode"/>.
+        /// Gets the right hand <see cref="GenericNode"/> associated with this <see cref="GenericNode"/>.
         /// </summary>
-        public INode? Right { get; }
+        public GenericNode? Right { get; }
 
-        //public INode(dynamic? value = null, INode? left = null, INode? right = null)
-        //{
-        //    Value = value;
-        //    Left = left;
-        //    Right = right;
-        //}
+        public GenericNode(dynamic? value = null, GenericNode? left = null, GenericNode? right = null)
+        {
+            Value = value;
+            Left = left;
+            Right = right;
+        }
     }
 }
