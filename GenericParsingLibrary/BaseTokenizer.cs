@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 namespace GenericParsingLibrary
 {
     /// <summary>
-    /// Base tokenizing class with everything required by <see cref="AbstractParser"/>.
+    /// Base tokenizing class with everything required by <see cref="BaseParser"/>.
     /// </summary>
-    public abstract class AbstractTokenizer
+    public abstract class BaseTokenizer
     {
         /// <summary>
         /// Gets the list of tokens processed by the tokenizer.
@@ -28,10 +28,10 @@ namespace GenericParsingLibrary
         /// </summary>
         public string ExceptionMessage { get; protected set; } = "";
         /// <summary>
-        /// Initializes a new instance of the <see cref="AbstractTokenizer"/> class.
+        /// Initializes a new instance of the <see cref="BaseTokenizer"/> class.
         /// </summary>
         /// <param name="source"></param>
-        protected AbstractTokenizer(string source)
+        protected BaseTokenizer(string source)
         {
             Source = source;
         }

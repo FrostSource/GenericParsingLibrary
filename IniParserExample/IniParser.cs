@@ -63,7 +63,7 @@ namespace IniParserExample
     // Better way to do this?
     using IniKeyValueType = System.Collections.Generic.Dictionary<string, dynamic>;
     using IniFileType = System.Collections.Generic.Dictionary<string, System.Collections.Generic.Dictionary<string, dynamic>>;
-    public class IniParser : GenericParser
+    public class IniParser : BaseParser
     {
 
         private IniTokenizer Tokenizer { get; set; }

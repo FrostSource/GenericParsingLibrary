@@ -10,81 +10,8 @@ namespace GenericParsingLibrary
     /// The generic parser contains properties and methods to simplify the parsing of <see cref="GenericToken"/> objects.
     /// </summary>
     // TODO: Turn this into an interface or inherit an interface.
-    public class GenericParser
+    public class BaseParser
     {
-        #region Handling tokens
-        /// <summary>
-        /// Gets or sets the list of <see cref="GenericToken"/> objects to parse through.
-        /// </summary>
-        protected List<GenericToken>? Tokens { get; set; }
-        /// <summary>
-        /// Gets the current index of <see cref="Tokens"/>.
-        /// </summary>
-        protected int Index { get; private set; }
-        /// <summary>
-        /// Gets the next token available, or null if not.
-        /// </summary>
-        protected GenericToken? NextToken
-        {
-            get
-            {
-                if (Tokens == null || Tokens.Count == 0 || Index >= Tokens.Count)
-                {
-                    return null;
-                }
-                else
-                {
-                    return Tokens[Index];
-                }
-            }
-        }
-        /// <summary>
-        /// Get the current token, the one waiting to be consumed.
-        /// </summary>
-        /// <exception cref="ParserEOFException">Thrown when there are no tokens left.</exception>
-        protected GenericToken CurrentToken
-        {
-            get
-            {
-                if (Tokens == null || Tokens.Count == 0 || Index >= Tokens.Count)
-                {
-                    throw EOFError();
-                }
-                return Tokens[Index];
-            }
-        }
-        /// <summary>
-        /// Get the current token, the one waiting to be consumed, if it exists.
-        /// This will not throw an exception and returns null if not found.
-        /// </summary>
-        protected GenericToken? CurrentTokenSafe
-        {
-            get
-            {
-                if (Tokens == null || Tokens.Count == 0 || Index >= Tokens.Count)
-                {
-                    return null;
-                }
-                return Tokens[Index];
-            }
-        }
-        /// <summary>
-        /// Get the previous token.
-        /// </summary>
-        /// <exception cref="ParserException"></exception>
-        protected GenericToken PreviousToken
-        {
-            get
-            {
-                if (Tokens == null || Tokens.Count == 0 || Index < 0)
-                {
-                    throw EOFError();
-                }
-                return Tokens[Index-1];
-            }
-        }
-        #endregion Handling tokens
-
         #region Consuming tokens
         /// <summary>
         /// Eat the current token waiting to be consumed.
@@ -302,6 +229,79 @@ namespace GenericParsingLibrary
         }
         #endregion Consuming tokens
 
+        #region Handling tokens
+        /// <summary>
+        /// Gets or sets the list of <see cref="GenericToken"/> objects to parse through.
+        /// </summary>
+        protected List<GenericToken>? Tokens { get; set; }
+        /// <summary>
+        /// Gets the current index of <see cref="Tokens"/>.
+        /// </summary>
+        protected int Index { get; set; }
+        /// <summary>
+        /// Gets the next token available, or null if not.
+        /// </summary>
+        protected virtual GenericToken? NextToken
+        {
+            get
+            {
+                if (Tokens == null || Tokens.Count == 0 || Index >= Tokens.Count)
+                {
+                    return null;
+                }
+                else
+                {
+                    return Tokens[Index];
+                }
+            }
+        }
+        /// <summary>
+        /// Get the current token, the one waiting to be consumed.
+        /// </summary>
+        /// <exception cref="ParserEOFException">Thrown when there are no tokens left.</exception>
+        protected virtual GenericToken CurrentToken
+        {
+            get
+            {
+                if (Tokens == null || Tokens.Count == 0 || Index >= Tokens.Count)
+                {
+                    throw EOFError();
+                }
+                return Tokens[Index];
+            }
+        }
+        /// <summary>
+        /// Get the current token, the one waiting to be consumed, if it exists.
+        /// This will not throw an exception and returns null if not found.
+        /// </summary>
+        protected virtual GenericToken? CurrentTokenSafe
+        {
+            get
+            {
+                if (Tokens == null || Tokens.Count == 0 || Index >= Tokens.Count)
+                {
+                    return null;
+                }
+                return Tokens[Index];
+            }
+        }
+        /// <summary>
+        /// Get the previous token.
+        /// </summary>
+        /// <exception cref="ParserException"></exception>
+        protected GenericToken PreviousToken
+        {
+            get
+            {
+                if (Tokens == null || Tokens.Count == 0 || Index < 0)
+                {
+                    throw EOFError();
+                }
+                return Tokens[Index - 1];
+            }
+        }
+        #endregion Handling tokens
+
         #region Error reporting
         /// <summary>
         /// Gets or sets the stack of error messages that will be reported when a parse exception falls through.
@@ -315,7 +315,7 @@ namespace GenericParsingLibrary
         /// <summary>
         /// Pops an error off the top of the stack so it will no longer be reported when an exception is thrown.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The popped error message.</returns>
         protected string PopError()
         {
             if (ErrorStack.Count > 0)
@@ -323,33 +323,62 @@ namespace GenericParsingLibrary
 
             return "";
         }
-
-        internal ParserSyntaxException SyntaxError(TokenType[] expectedTypes)
+        /// <summary>
+        /// Creates a new <see cref="ParserSyntaxException"/> using the top <see cref="ErrorStack"/>.
+        /// </summary>
+        /// <returns></returns>
+        protected ParserSyntaxException SyntaxError()
+        {
+            return new ParserSyntaxException(ErrorStack.Peek(), CurrentToken);
+        }
+        /// <summary>
+        /// Creates a new <see cref="ParserSyntaxException"/> from an array of expected types.
+        /// </summary>
+        /// <param name="expectedTypes"></param>
+        /// <returns></returns>
+        protected ParserSyntaxException SyntaxError(TokenType[] expectedTypes)
         {
             if (ErrorStack.Count > 0) return new ParserSyntaxException(ErrorStack.Peek(), CurrentToken);
             return new ParserSyntaxException(expectedTypes, CurrentToken);
         }
-        internal ParserSyntaxException SyntaxError(TokenType expectedType, string expectedValue = "")
+        /// <summary>
+        /// Creates a new <see cref="ParserSyntaxException"/> from a type and value.
+        /// </summary>
+        /// <param name="expectedType"></param>
+        /// <param name="expectedValue"></param>
+        /// <returns></returns>
+        protected ParserSyntaxException SyntaxError(TokenType expectedType, string expectedValue = "")
         {
             if (ErrorStack.Count > 0) return new ParserSyntaxException(ErrorStack.Peek(), CurrentToken);
             return new ParserSyntaxException(expectedType, expectedValue, CurrentToken);
         }
-        internal ParserSyntaxException SyntaxError(TokenType[] expectedTypes, string[] expectedValues)
+        /// <summary>
+        /// Creates a new <see cref="ParserSyntaxException"/> from types and values.
+        /// </summary>
+        /// <param name="expectedTypes"></param>
+        /// <param name="expectedValues"></param>
+        /// <returns></returns>
+        protected ParserSyntaxException SyntaxError(TokenType[] expectedTypes, string[] expectedValues)
         {
             if (ErrorStack.Count > 0) return new ParserSyntaxException(ErrorStack.Peek(), CurrentToken);
             return new ParserSyntaxException(expectedTypes, expectedValues, CurrentToken);
         }
-        internal ParserSyntaxException SyntaxError(string message)
+        /// <summary>
+        /// Creates a new <see cref="ParserSyntaxException"/> with a message.
+        /// </summary>
+        /// <param name="message"></param>
+        /// <returns></returns>
+        protected ParserSyntaxException SyntaxError(string message)
         {
             if (ErrorStack.Count > 0) return new ParserSyntaxException(ErrorStack.Peek(), CurrentToken);
             return new ParserSyntaxException(message, CurrentToken);
         }
         /// <summary>
-        /// 
+        /// Creates a <see cref="ParserEOFException"/> with a message.
         /// </summary>
         /// <param name="message"></param>
-        /// <returns></returns>
-        internal ParserException EOFError(string message = "Unexpected end of file")
+        /// <returns><see cref="ParserEOFException"/> or <see cref="ParserSyntaxException"/></returns>
+        protected ParserException EOFError(string message = "Unexpected end of file")
         {
             if (ErrorStack.Count > 0) return new ParserSyntaxException(ErrorStack.Peek(), CurrentToken);
             return new ParserEOFException(message, CurrentTokenSafe);

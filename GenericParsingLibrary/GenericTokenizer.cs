@@ -8,7 +8,7 @@ namespace GenericParsingLibrary
     /// Generic tokenizer can be used to tokenize simple languages by modifying the public properties.
     /// For more complex languages this class should be extended.
     /// </summary>
-    public class GenericTokenizer : AbstractTokenizer
+    public class GenericTokenizer : BaseTokenizer
     {
         #region Constants
         /// <summary>
@@ -114,7 +114,7 @@ namespace GenericParsingLibrary
         /// </summary>
         public virtual string ValidChars { get; set; } = string.Empty;
         /// <summary>
-        /// Gets the current character in the <see cref="AbstractTokenizer.Source"/> <see cref="string"/> waiting to be processed.
+        /// Gets the current character in the <see cref="BaseTokenizer.Source"/> <see cref="string"/> waiting to be processed.
         /// </summary>
         protected char CurrentChar
         {
@@ -127,7 +127,7 @@ namespace GenericParsingLibrary
             }
         }
         /// <summary>
-        /// Gets the next char in the <see cref="AbstractTokenizer.Source"/> <see cref="string"/> after <see cref="CurrentChar"/>.
+        /// Gets the next char in the <see cref="BaseTokenizer.Source"/> <see cref="string"/> after <see cref="CurrentChar"/>.
         /// </summary>
         protected char NextChar
         {
@@ -140,39 +140,40 @@ namespace GenericParsingLibrary
             }
         }
         /// <summary>
-        /// Gets the current index in the <see cref="AbstractTokenizer.Source"/> <see cref="string"/>.
+        /// Gets the current index in the <see cref="BaseTokenizer.Source"/> <see cref="string"/>.
         /// </summary>
         protected int Index { get; private set; } = 0;
         /// <summary>
-        /// Gets the current line number (row) in the <see cref="AbstractTokenizer.Source"/> <see cref="string"/>.
+        /// Gets the current line number (row) in the <see cref="BaseTokenizer.Source"/> <see cref="string"/>.
         /// </summary>
         protected int LineNumber { get; private set; } = 1;
         /// <summary>
-        /// Gets the current line position (column) in the <see cref="AbstractTokenizer.Source"/> <see cref="string"/>.
+        /// Gets the current line position (column) in the <see cref="BaseTokenizer.Source"/> <see cref="string"/>.
         /// </summary>
         protected int LinePosition { get; private set; } = 1;
         /// <summary>
-        /// Gets the previous line number (row) in the <see cref="AbstractTokenizer.Source"/> <see cref="string"/>.
+        /// Gets the previous line number (row) in the <see cref="BaseTokenizer.Source"/> <see cref="string"/>.
         /// </summary>
         protected int PreviousLineNumber { get; private set; } = 1;
         /// <summary>
-        /// Gets the previous line position (column) in the <see cref="AbstractTokenizer.Source"/> <see cref="string"/>.
+        /// Gets the previous line position (column) in the <see cref="BaseTokenizer.Source"/> <see cref="string"/>.
         /// </summary>
         protected int PreviousLinePosition { get; private set; } = 1;
         /// <summary>
-        /// Gets the line number (row) in the <see cref="AbstractTokenizer.Source"/> <see cref="string"/>, as saved with <see cref="SavePosition"/>.
+        /// Gets the line number (row) in the <see cref="BaseTokenizer.Source"/> <see cref="string"/>, as saved with <see cref="SavePosition"/>.
         /// </summary>
         protected int SavedLineNumber { get; private set; } = 1;
         /// <summary>
-        /// Gets the line position (column) in the <see cref="AbstractTokenizer.Source"/> <see cref="string"/>, as saved with <see cref="SavePosition"/>.
+        /// Gets the line position (column) in the <see cref="BaseTokenizer.Source"/> <see cref="string"/>, as saved with <see cref="SavePosition"/>.
         /// </summary>
         protected int SavedLinePosition { get; private set; } = 1;
         /// <summary>
-        /// Gets if the tokenizer has arrived at the end of the <see cref="AbstractTokenizer.Source"/> <see cref="string"/>.
+        /// Gets if the tokenizer has arrived at the end of the <see cref="BaseTokenizer.Source"/> <see cref="string"/>.
         /// </summary>
         protected bool EOF { get => Index >= Source.Length; }
         #endregion
 
+        #region Constructors
         /// <summary>
         /// Initializes a new instance of the <see cref="GenericTokenizer"/> class with a source string.
         /// </summary>
@@ -188,6 +189,7 @@ namespace GenericParsingLibrary
                 BoundaryChars += new string(string.Concat(Symbols).Distinct().ToArray());
             }
         }
+        #endregion
 
         #region Char handling
         /// <summary>

@@ -69,7 +69,7 @@ namespace GenericParsingLibrary
     public class GenericToken
     {
         /// <summary>
-        /// Gets the type of the token. Used mostly with <see cref="GenericParser.Eat(TokenType[])"/> methods.
+        /// Gets the type of the token. Used mostly with <see cref="BaseParser.Eat(TokenType[])"/> methods.
         /// </summary>
         public TokenType TokenType { get; private set; }
         /// <summary>
