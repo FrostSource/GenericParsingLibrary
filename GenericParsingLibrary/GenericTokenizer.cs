@@ -174,7 +174,7 @@ namespace GenericParsingLibrary
         #endregion
 
         /// <summary>
-        /// Instantiates a new instance of the <see cref="GenericTokenizer"/> class with a source string.
+        /// Initializes a new instance of the <see cref="GenericTokenizer"/> class with a source string.
         /// </summary>
         /// <param name="source"></param>
         public GenericTokenizer(string source) : base(source)
@@ -696,10 +696,21 @@ namespace GenericParsingLibrary
                 "xFF" => '\xFF'
             };*/
         }
+        /// <summary>
+        /// Checks if a character is part hexidecimal.
+        /// </summary>
+        /// <param name="ch"></param>
+        /// <returns></returns>
         public static bool CharIsHexidecimal(char ch)
         {
             return HexChars.IndexOf(ch) > -1;
         }
+        /// <summary>
+        /// Checks if a character is a digit.
+        /// This does not use <see cref="DigitChars"/>.
+        /// </summary>
+        /// <param name="ch"></param>
+        /// <returns></returns>
         public static bool IsDigit(char ch)
         {
             return (ch == '0' || ch == '1' || ch == '2' || ch == '3' || ch == '4' || ch == '5' || ch == '6' || ch == '7' || ch == '8' || ch == '9');
@@ -725,24 +736,51 @@ namespace GenericParsingLibrary
         {
             return $"line {lineNumber}, pos {linePosition}";
         }
+        /// <summary>
+        /// Creates a new tokenizer exception with a message and specific line position.
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="lineNumber"></param>
+        /// <param name="linePosition"></param>
+        /// <returns></returns>
         public static TokenizerSyntaxException SyntaxError(string message, int lineNumber, int linePosition)
         {
             return new TokenizerSyntaxException(ReplaceSpecialCharsInString(message), lineNumber, linePosition);
         }
+        /// <summary>
+        /// Creates a new tokenizer exception with a message at the current line position.
+        /// </summary>
+        /// <param name="message"></param>
+        /// <returns></returns>
         protected TokenizerSyntaxException SyntaxError(string message)
         {
             return SyntaxError(message, LineNumber, LinePosition);
         }
+        /// <summary>
+        /// Creates a new tokenizer exception with a message at the previous line position.
+        /// </summary>
+        /// <param name="message"></param>
+        /// <returns></returns>
         protected TokenizerSyntaxException SyntaxErrorPrevious(string message)
         {
             return SyntaxError(message, PreviousLineNumber, PreviousLinePosition);
         }
+        /// <summary>
+        /// Creates a new tokenizer exception with a message at the saved line position.
+        /// </summary>
+        /// <param name="message"></param>
+        /// <returns></returns>
         protected TokenizerSyntaxException SyntaxErrorSaved(string message)
         {
             return SyntaxError(message, SavedLineNumber, SavedLinePosition);
         }
         #endregion
 
+        /// <summary>
+        /// Sets a new source string and resets positioning properties.
+        /// This does <i>not</i> clear the token list.
+        /// </summary>
+        /// <param name="source"></param>
         public void SetSource(string source)
         {
             Source = source;

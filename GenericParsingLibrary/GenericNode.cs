@@ -23,7 +23,12 @@ namespace GenericParsingLibrary
         /// Gets the right hand <see cref="GenericNode"/> associated with this <see cref="GenericNode"/>.
         /// </summary>
         public GenericNode? Right { get; }
-
+        /// <summary>
+        /// Initializes a new instance of the <see cref="GenericNode"/> class with a value and left/right nodes.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="left"></param>
+        /// <param name="right"></param>
         public GenericNode(dynamic? value = null, GenericNode? left = null, GenericNode? right = null)
         {
             Value = value;

@@ -69,24 +69,34 @@ namespace GenericParsingLibrary
     public class GenericToken
     {
         /// <summary>
-        /// Type of the token. Used mostly with <see cref="GenericParser.Eat(TokenType[])"/> methods..
+        /// Gets the type of the token. Used mostly with <see cref="GenericParser.Eat(TokenType[])"/> methods.
         /// </summary>
         public TokenType TokenType { get; private set; }
         /// <summary>
-        /// Value of the token from the source as a string.
-        /// This should be parsed to the desired type in your parsing class.
+        /// Gets the value of the token as a string.
+        /// This should be converted to the desired type in your parsing class.
         /// </summary>
         public string Value { get; private set; }
+        /// <summary>
+        /// Gets the index this token was encountered at in the source string.
+        /// </summary>
         public int Index { get; private set; }
         /// <summary>
-        /// Line number in the source string that this token was encountered at.
+        /// Gets the line number in the source string that this token was encountered at.
         /// </summary>
         public int LineNumber { get; private set; }
         /// <summary>
-        /// Line position on the line in the source string this token was encountered at.
+        /// Gets the line position on the line in the source string this token was encountered at.
         /// </summary>
         public int LinePosition { get; private set; }
-
+        /// <summary>
+        /// Instantiates a new instance of the <see cref="GenericToken"/> class.
+        /// </summary>
+        /// <param name="tokenType">Type is relevant only to the designer and his parser.</param>
+        /// <param name="value">Text value of the token.</param>
+        /// <param name="index">Index where the first char appeared in the source.</param>
+        /// <param name="lineNumber"></param>
+        /// <param name="linePosition"></param>
         public GenericToken(TokenType tokenType, string value, int index, int lineNumber, int linePosition)
         {
             TokenType = tokenType;
