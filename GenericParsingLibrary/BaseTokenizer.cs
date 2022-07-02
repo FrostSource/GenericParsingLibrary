@@ -7,42 +7,29 @@ using System.Threading.Tasks;
 namespace GenericParsingLibrary
 {
     /// <summary>
-    /// Base tokenizing class with everything required by <see cref="BaseParser"/>.
+    /// Base tokenizing class with everything required by <see cref="EasyParser"/>.
     /// </summary>
-    public abstract class BaseTokenizer
+    public abstract class BaseTokenizer : ITokenizer
     {
-        /// <summary>
-        /// Gets the list of tokens processed by the tokenizer.
-        /// </summary>
+        /// <inheritdoc/>
         public List<GenericToken> Tokens { get; protected set; } = new();
-        /// <summary>
-        /// Gets the last token processed by the tokenizer.
-        /// </summary>
+        /// <inheritdoc/>
         public GenericToken? LastToken { get; protected set; }
-        /// <summary>
-        /// Gets the source string.
-        /// </summary>
+        /// <inheritdoc/>
         public string Source { get; protected set; }
-        /// <summary>
-        /// Gets the last exception message the tokenizer encountered during tokenization.
-        /// </summary>
+        /// <inheritdoc/>
         public string ExceptionMessage { get; protected set; } = "";
         /// <summary>
         /// Initializes a new instance of the <see cref="BaseTokenizer"/> class.
         /// </summary>
         /// <param name="source"></param>
-        protected BaseTokenizer(string source)
+        public BaseTokenizer(string source)
         {
             Source = source;
         }
-        /// <summary>
-        /// Generates tokens from the source string.
-        /// </summary>
+        /// <inheritdoc/>
         public abstract void Tokenize();
-        /// <summary>
-        /// Generates tokens from the source string and catches any exceptions.
-        /// </summary>
-        /// <returns><see langword="true"/> if no exception occured</returns>
+        /// <inheritdoc/>
         public virtual bool TryTokenize()
         {
             try

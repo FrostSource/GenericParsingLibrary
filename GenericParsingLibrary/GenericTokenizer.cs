@@ -72,9 +72,9 @@ namespace GenericParsingLibrary
         /// </summary>
         public virtual bool CaseSensitiveKeywords { get; set; } = true;
         /// <summary>
-        /// Gets or sets the character sequence that starts and ends a string.
+        /// Gets or sets the characters that can start and end a string.
         /// </summary>
-        public virtual string StringBoundaryCharacters { get; set; } = "\"";
+        public virtual string StringBoundaryCharacters { get; set; } = "\"'";
         /// <summary>
         /// Gets or sets the characters that an identifier can start with.
         /// </summary>
@@ -351,6 +351,7 @@ namespace GenericParsingLibrary
             expecting = expecting == "" ? "word" : expecting;
 
             if (AutoSkipGarbage) SkipGarbage();
+            SavePosition();
             var str = new StringBuilder();
             while (!EOF && !boundaryChars.Contains(CurrentChar) && (validChars == string.Empty || validChars.Contains(CurrentChar)) && (allowWhiteSpace || !IsWhiteSpace(CurrentChar)))
             {
@@ -413,7 +414,8 @@ namespace GenericParsingLibrary
         /// <returns></returns>
         protected virtual string NextInteger()
         {
-            if (AutoSkipGarbage) SkipGarbage();
+            // Unneeded because NextWord does this
+            //if (AutoSkipGarbage) SkipGarbage();
 
             var integer = NextWord("integer", validChars: DigitChars);
             return integer;
@@ -427,7 +429,8 @@ namespace GenericParsingLibrary
         {
             decimalChar ??= DecimalChar;
 
-            if (AutoSkipGarbage) SkipGarbage();
+            // Unneeded because NextWord does this
+            //if (AutoSkipGarbage) SkipGarbage();
 
             string decimalPre = NextWord("decimal number", BoundaryChars + decimalChar, validChars: DigitChars);
             string decimalPost = "";
@@ -534,12 +537,13 @@ namespace GenericParsingLibrary
             return sb.ToString();
         }
         /// <summary>
-        /// Gets all characters left on the current line.
+        /// Gets all characters left on the current line and moves to the beginning of the next line.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>All characters left on the current line, not including \n.</returns>
         protected string RestOfLine()
         {
             var sb = new StringBuilder();
+            // TODO: Should be checking for \r?
             while (!EOF && CurrentChar != '\n' && CurrentChar != '\r')
             {
                 sb.Append(CurrentChar);
@@ -716,6 +720,25 @@ namespace GenericParsingLibrary
         public static bool IsDigit(char ch)
         {
             return (ch == '0' || ch == '1' || ch == '2' || ch == '3' || ch == '4' || ch == '5' || ch == '6' || ch == '7' || ch == '8' || ch == '9');
+        }
+        /// <summary>
+        /// Check if <paramref name="value"/> is a number.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static bool IsNumber(string value)
+        {
+            return double.TryParse(value, out _);
+        }
+        /// <summary>
+        /// Checks if <paramref name="value"/> starts and ends with <paramref name="ch"/>.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="ch"></param>
+        /// <returns></returns>
+        public static bool StartsEndsWith(string value, char ch)
+        {
+            return value.StartsWith(ch) && value.EndsWith(ch);
         }
         #endregion
 

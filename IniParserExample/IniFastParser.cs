@@ -7,7 +7,7 @@ namespace IniParserExample
     // Better way to do this?
     using IniKeyValueType = Dictionary<string, object>;
     using IniFileType = Dictionary<string, Dictionary<string, object>>;
-    public class IniParser : EasyParser
+    public class IniFastParser : FastParser
     {
 
         public IniFileType? IniFile { get; private set; }
@@ -16,10 +16,12 @@ namespace IniParserExample
         /// Instantiate with a list of tokens.
         /// </summary>
         /// <param name="source"></param>
-        public IniParser(List<GenericToken> tokens)
+        public IniFastParser(List<GenericToken> tokens)
         {
             Tokens = tokens;
         }
+        public IniFastParser(IniTokenizer tokenizer) : this(tokenizer.Tokens) { }
+        
 
         protected override bool ParseTop()
         {
@@ -27,104 +29,133 @@ namespace IniParserExample
             // We must parse one or more <section>
 
             var file = new IniFileType();
-
             OneOrMore(() =>
             {
-                var (sectionName, sectionKeys) = ParseSection();
+                if (!ParseSection()) return false;
+                var (sectionName, sectionKeys) = ((string sectionName, IniKeyValueType sectionKeys))GetCache();
                 file.Add(sectionName, sectionKeys);
+                return true;
             });
             IniFile = file;
             return true;
         }
 
-        private (string sectionName, IniKeyValueType sectionKeys) ParseSection()
+        private bool ParseSection()
         {
+            //(string sectionName, IniKeyValueType sectionKeys)
             //<section> ::= "[" , <id> , "]" , <EOL> , { <pair> , <EOL> }*
 
             var sectionKeys = new IniKeyValueType();
 
             // Parse the section syntax
-            Eat(TokenType.Symbol, "[");
+            if (!Eat(TokenType.Symbol, "[")) return false;
             // This part also handles the <sctn_name> rule
             // without creating a new method.
             var nameBuilder = new StringBuilder();
-            OneOrMore(() =>
+            if (!OneOrMore(() =>
             {
-                var name = ParseId();
-                nameBuilder.Append(name);
-            });
+                if (!ParseId()) return false;
+                nameBuilder.Append((string)GetCache());
+                return true;
+            })) return false;
+
             var sectionName = nameBuilder.ToString();
-            Eat(TokenType.Symbol, "]");
+            if (!Eat(TokenType.Symbol, "]")) return false;
 
             // Parse end of line
-            ParseEOL();
+            if (!ParseEOL()) return false;
 
             // Zero or more pairs
             ZeroOrMore(() =>
             {
-                var pair = ParsePair();
-                ParseEOL();
+                if (!ParsePair()) return false;
+                var pair = (KeyValuePair<string, object>)GetCache();
+                if (!ParseEOL()) return false;
                 // Add the pair after finishing all parsing in this delegate
                 sectionKeys.Add(pair.Key, pair.Value);
+                return true;
             });
 
             // Return the data for the top method to handle
-            return (sectionName, sectionKeys);
+            CacheValue((sectionName, sectionKeys));
+            return true;
         }
 
-        private string ParseId()
+        private bool ParseId()
         {
             //<id>      ::= [ \W | \D | "_" ] , { [ \W | \D | "_" ] }*
             // The specifics are taken care of in the tokenizer
-            return Eat(TokenType.Identifier).Value;
+            if (!Eat(TokenType.Identifier)) return false;
+            CacheValue(PreviousToken.Value);
+            return true;
         }
 
-        private void ParseEOL()
+        private bool ParseEOL()
         {
             //<EOL>       ::= [ { "\n" }+ | EOF ]
-            EitherOr(
-                () => {
+            return EitherOr(
+                () =>
+                {
                     // Multiple lines are allowed between values.
-                    OneOrMore(
-                        () => { Eat(TokenType.Symbol, "\n"); }
-                        );
-                    return true;
-                    }
+                    return OneOrMore(() => { return Eat(TokenType.Symbol, "\n"); });
+                }
                 ,
                 () => { return NextToken == null; }
                 );
         }
 
-        private KeyValuePair<string, object> ParsePair()
+        private bool ParsePair()
         {
+            //KeyValuePair<string, object>
             //<id> , "=" , <value>
             // This rule method handles both <id> and <value> rules itself.
-            var key = Eat(TokenType.Identifier).Value;
-            Eat(TokenType.Symbol, "=");
-            object value = EitherOr<object>(
+            if (!Eat(TokenType.Identifier)) return false;
+            var key = PreviousToken.Value;
+            if (!Eat(TokenType.Symbol, "=")) return false;
+            if (!EitherOr(
                 () =>
                 {
-                    return Eat(TokenType.String).Value;
+                    if (!Eat(TokenType.String)) return false;
+                    CacheValue(PreviousToken.Value);
+                    return true;
                 }
                 ,
                 () =>
                 {
-                    return Eat(TokenType.Identifier).Value;
+                    if (!Eat(TokenType.Identifier)) return false;
+                    CacheValue(PreviousToken.Value);
+                    return true;
                 }
                 ,
                 () =>
                 {
                     // whole and decimal numbers are double for our ini file
-                    return double.Parse(Eat(TokenType.Number).Value);
+                    if (!Eat(TokenType.Number)) return false;
+                    CacheValue(double.Parse(PreviousToken.Value));
+                    return true;
                 }
                 ,
                 () =>
                 {
-                    return Eat(TokenType.Keyword).Value.ToLower() == "true";
+                    if (!Eat(TokenType.Keyword)) return false;
+                    CacheValue(PreviousToken.Value.ToLower() == "true");
+                    return true;
                 }
-                );
-            return new KeyValuePair<string, object>(key, value);
+                ))
+                return false;
+            CacheValue(new KeyValuePair<string, object>(key, GetCache()));
+            return true;
         }
+
+        ///// <summary>
+        ///// Parse the source content.
+        ///// </summary>
+        //public override void Parse()
+        //{
+            
+        //    // Then the top level method searches the nodes to generate an ini file dictionary.
+        //    ParseTop();
+        //}
     }
 }
 

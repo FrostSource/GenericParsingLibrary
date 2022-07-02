@@ -2,7 +2,7 @@
 
 namespace IniParserExample
 {
-    internal class IniTokenizer : GenericTokenizer
+    public class IniTokenizer : GenericTokenizer
     {
         // Our ini files only allow ; for comments. Some ini files allow # and this can be easily
         // hard coded into our custom tokenizer if desired by extending the SkipCommentLine method.
@@ -18,6 +18,8 @@ namespace IniParserExample
                                     // Adding \n as a symbol allows it to be captured for the parser
         public override string[] Symbols { get; set; } = { "[", "]", "\n", "=" };
         public override bool UseNumberTokenOnly { get; set; } = true;
+        public override string[] Keywords { get; set; } = { "false", "true" };
+        public override bool CaseSensitiveKeywords { get; set; } = false;
 
         // We will use this to provide special rules for section names.
         private bool encounteredSection = false;
@@ -82,20 +84,48 @@ namespace IniParserExample
             }
 
             // Differentiating numbers from strings can be useful for the parser.
+            if (TokenizeKeyword()) return;
+
+            if (TokenizeIdentifier()) return;
+
             if (TokenizeNumber()) return;
+
+            if (TokenizeString()) return;
+
+            //var val = RestOfLine().Trim();
+            //if (val.Length == 0)
+            //{
+            //    throw SyntaxError($"Expecting string of characters");
+            //}
+            //else if (IsNumber(val))
+            //{
+            //    AddToken(TokenType.Number, val);
+            //}
+            //else if (val == "true" || val == "false")
+            //{
+            //    AddToken(TokenType.Boolean, val);
+            //}
+            //else if (StartsEndsWith(val, '"') || StartsEndsWith(val, '\''))
+            //{
+            //    AddToken(TokenType.String, val[1..^1]);
+            //}
+            //else
+            //{
+            //    AddToken(TokenType.String, val);
+            //}
 
             // Anything else is a string of characters used for key/value
             // why can't I use 'value' here? Does C# not scope variables by code blocks?
-            var val = NextWord("string of characters", allowWhiteSpace: true);
-            val = val.Trim();
-            if (val.Length == 0)
-            {
-                throw SyntaxError($"Expecting string of characters");
-            }
-            AddToken(TokenType.Identifier, val);
-            return;
+            //var val = NextWord("string of characters", allowWhiteSpace: true);
+            //val = val.Trim();
+            //if (val.Length == 0)
+            //{
+            //    throw SyntaxError($"Expecting string of characters");
+            //}
+            //AddToken(TokenType.Identifier, val);
+            //return;
 
-            //throw SyntaxError($"unknown character \"{CurrentChar}\"");
+            throw SyntaxError($"unknown character \"{CurrentChar}\"");
 
             // If you're just extending the function with more behaviour you can of course
             // call the base function to retain standard behaviour afterwards, just make sure

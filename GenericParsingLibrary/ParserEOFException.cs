@@ -17,7 +17,7 @@ namespace GenericParsingLibrary
         /// </summary>
         /// <param name="message"></param>
         /// <param name="encounteredToken"></param>
-        public ParserEOFException(string message, GenericToken? encounteredToken = null)
+        public ParserEOFException(string message, IToken? encounteredToken = null)
             : base(BuildExceptionMessage(message, encounteredToken))
         {
         }
@@ -31,7 +31,7 @@ namespace GenericParsingLibrary
         {
         }
 
-        private static string BuildExceptionMessage(string message, GenericToken? encounteredToken)
+        private static string BuildExceptionMessage(string message, IToken? encounteredToken)
         {
             if (encounteredToken == null)
                 return $"{message}.";
