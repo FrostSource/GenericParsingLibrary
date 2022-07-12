@@ -1,52 +1,87 @@
-﻿
-
+﻿using System.Collections;
 using System.Collections.ObjectModel;
-
-
 
 namespace IniParserExample
 {
-    using IniKeyValueType = System.Collections.Generic.Dictionary<string, dynamic>;
-    using IniFileType = System.Collections.Generic.Dictionary<string, System.Collections.Generic.Dictionary<string, dynamic>>;
-    public class IniFile
+    public class IniFile : IEnumerable<KeyValuePair<string, Dictionary<string, object>>>
     {
-        private readonly IniFileType section;
+        public int Length => Sections.Count;
+        public string ExceptionMessage { get; } = string.Empty;
+        public bool Success { get; }
 
-        public readonly IReadOnlyDictionary<string, IniKeyValueType> Sections;
-        public readonly int Length;
-        public readonly string ExceptionMessage;
-        public IniFile(FileInfo path)
+        private Dictionary<string, Dictionary<string, object>> Sections { get; }
+
+        public IniFile(string path, bool fast = false)
         {
-            var parser = new IniParser(path);
-            // Checking not null here is just for C# parser
-            // is there a way to tell it that IniFile definitely won't
-            // be null after TryParse?
-            if (parser.TryParse() && parser.IniFile != null)
+            // Tokenizing needs to be done first.
+            var tokenizer = new IniTokenizer(File.ReadAllText(path));
+            if (!tokenizer.TryTokenize())
             {
-                section = parser.IniFile;
+                ExceptionMessage = tokenizer.ExceptionMessage;
+                Sections = new();
+                return;
+            }
+            if (fast)
+            {
+                var parser = new IniFastParser(tokenizer.Tokens);
+                // Checking not null here is just for C# compiler
+                // is there a way to tell it that IniFile definitely won't
+                // be null after TryParse?
+                if (parser.TryParse() && parser.IniFile != null)
+                {
+                    Sections = parser.IniFile;
+                    Success = true;
+                }
+                else
+                {
+                    Sections = new();
+                    Success = false;
+                    ExceptionMessage = parser.ExceptionMessage;
+                }
             }
             else
             {
-                section = new();
+                var parser = new IniParser(tokenizer.Tokens);
+                if (parser.TryParse() && parser.IniFile != null)
+                {
+                    Sections = parser.IniFile;
+                    Success = true;
+                }
+                else
+                {
+                    Sections = new();
+                    Success = false;
+                    ExceptionMessage = parser.ExceptionMessage;
+                }
             }
-
-            Sections = new ReadOnlyDictionary<string, IniKeyValueType>(section);
-            ExceptionMessage = parser.LastExceptionMessage;
-            Length = section.Count;
+        }
+        public IniFile(FileInfo path, bool fast = false) : this(path.FullName, fast)
+        {
         }
 
         /// <summary>
-        /// Get the dictionary of keys for a given section.
+        /// Gets the dictionary of keys for a given section.
         /// </summary>
         /// <param name="section"></param>
         /// <returns></returns>
-        public IniKeyValueType this[string section] => this.section[section];
+        public ReadOnlyDictionary<string, object> this[string section]
+            => new ReadOnlyDictionary<string, object>(Sections[section]);
         /// <summary>
-        /// Get the value of a given key in a section.
+        /// Gets the value of a given key in a section.
         /// </summary>
         /// <param name="section"></param>
         /// <param name="key"></param>
         /// <returns></returns>
-        public string this[string section, string key] => this.section[section][key];
+        public object this[string section, string key] => Sections[section][key];
+
+        public IEnumerator<KeyValuePair<string, Dictionary<string, object>>> GetEnumerator()
+        {
+            return Sections.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
     }
 }

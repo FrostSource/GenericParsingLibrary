@@ -1,79 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
+﻿
 namespace GenericParsingLibrary
 {
-    public class GenericParser
+    /// <summary>
+    /// The easy parser uses exceptions to escape from parsing errors and continue from the latest successful point.
+    /// </summary>
+    public abstract class EasyParser<TToken> : BaseParser<TToken>
+        where TToken : IToken
     {
-        protected List<GenericToken>? Tokens { get; set; }
-        protected int Index { get; private set; }
-        protected Stack<string> ErrorStack { get; set; } = new();
-        /// <summary>
-        /// Get the next token available, or null if not.
-        /// </summary>
-        protected GenericToken? NextToken
-        {
-            get
-            {
-                if (Tokens == null || Tokens.Count == 0 || Index >= Tokens.Count)
-                {
-                    return null;
-                }
-                else
-                {
-                    return Tokens[Index];
-                }
-            }
-        }
-        /// <summary>
-        /// Get the current token, the one waiting to be consumed.
-        /// </summary>
-        /// <exception cref="ParserEOFException">Thrown when there are no tokens left.</exception>
-        protected GenericToken CurrentToken
-        {
-            get
-            {
-                if (Tokens == null || Tokens.Count == 0 || Index >= Tokens.Count)
-                {
-                    throw EOFError();
-                }
-                return Tokens[Index];
-            }
-        }
-        /// <summary>
-        /// Get the current token, the one waiting to be consumed, if it exists.
-        /// This will not throw an exception and returns null if not found.
-        /// </summary>
-        protected GenericToken? CurrentTokenSafe
-        {
-            get
-            {
-                if (Tokens == null || Tokens.Count == 0 || Index >= Tokens.Count)
-                {
-                    return null;
-                }
-                return Tokens[Index];
-            }
-        }
-        /// <summary>
-        /// Get the previous token.
-        /// </summary>
-        /// <exception cref="ParserException"></exception>
-        protected GenericToken PreviousToken
-        {
-            get
-            {
-                if (Tokens == null || Tokens.Count == 0 || Index < 0)
-                {
-                    throw EOFError();
-                }
-                return Tokens[Index-1];
-            }
-        }
-
+        #region Consuming tokens
         /// <summary>
         /// Eat the current token waiting to be consumed.
         /// If the given <see cref="TokenType"/> doesn't match, a syntax error will be thrown.
@@ -84,7 +18,7 @@ namespace GenericParsingLibrary
         /// <param name="caseSensitive">If the token value must be case sensitive.</param>
         /// <returns></returns>
         /// <exception cref="ParserSyntaxException"></exception>
-        protected GenericToken Eat(TokenType tokenType, string value = "", bool caseSensitive = true)
+        protected TToken Eat(TokenType tokenType, string value = "", bool caseSensitive = true)
         {
             if (CurrentToken.TokenType != tokenType ||
                 (value != "" && CurrentToken.Value.ToLower() != (caseSensitive ? value : value.ToLower())))
@@ -100,7 +34,7 @@ namespace GenericParsingLibrary
         /// </summary>
         /// <param name="tokenTypes"></param>
         /// <returns></returns>
-        protected GenericToken Eat(params TokenType[] tokenTypes)
+        protected TToken Eat(params TokenType[] tokenTypes)
         {
             foreach (var tokenType in tokenTypes)
             {
@@ -117,7 +51,7 @@ namespace GenericParsingLibrary
         /// <param name="value">Token value must match this. Leave blank to ignore.</param>
         /// <param name="caseSensitive">If the token value must be case sensitive.</param>
         /// <returns></returns>
-        protected GenericToken? EatOptional(TokenType tokenType, string value = "", bool caseSensitive = true)
+        protected TToken? EatOptional(TokenType tokenType, string value = "", bool caseSensitive = true)
         {
             // Make sure this if inversion works.
             if (
@@ -131,7 +65,7 @@ namespace GenericParsingLibrary
                 Index++;
                 return token;
             }
-            return null;
+            return default;
         }
 
         /// <summary>
@@ -235,61 +169,70 @@ namespace GenericParsingLibrary
             throw SyntaxError(expectedTokenTypes.ToArray(), expectedValues.ToArray());
         }
         /// <summary>
+        /// Generic version of <see cref="EitherOr(Func{bool}[])"/>
+        /// <para/>
+        /// Returns <typeparamref name="T"/> from the first function <paramref name="funcs"/> which does not throw an exception.
+        /// Every syntax exception is gathered and compiled into a single exception in the case of no function returning succesfully.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="funcs"></param>
+        /// <returns><typeparamref name="T"/> from the first successful function.</returns>
+        protected T EitherOr<T>(params Func<T>[] funcs)
+        {
+            var expectedTokenTypes = new HashSet<TokenType>();
+            var expectedValues = new HashSet<string>();
+            foreach (var func in funcs)
+            {
+                var savedIndex = Index;
+                try
+                {
+                    return func();
+                }
+                catch (ParserSyntaxException e)
+                {
+                    expectedTokenTypes.UnionWith(e.ExpectedTokenTypes);
+                    expectedValues.UnionWith(e.ExpectedValues);
+                    Index = savedIndex;
+                }
+                catch (ParserException)
+                {
+                    Index = savedIndex;
+                }
+            }
+
+            throw SyntaxError(expectedTokenTypes.ToArray(), expectedValues.ToArray());
+        }
+        /// <summary>
         /// An optional set of instructions. Will catch a syntax exception and ignore it.
         /// Passed function does not need to return anything.
         /// </summary>
         /// <param name="func"></param>
-        protected void Optional(Action func)
+        /// <returns><see langword="true"/> if no exception occured, <see langword="false"/> otherwise.</returns>
+        protected bool Optional(Action func)
         {
             var savedIndex = Index;
             try
             {
                 func();
+                return true;
             }
             catch (ParserSyntaxException)
             {
                 Index = savedIndex;
+                return false;
             }
         }
+        #endregion Consuming tokens
+    }
 
-        protected void PushError(string message) => ErrorStack.Push(message);
-        protected string PopError()
-        {
-            if (ErrorStack.Count > 0)
-                return ErrorStack.Pop();
+    /// <summary>
+    /// The easy parser uses exceptions to escape from parsing errors and continue from the latest successful point.
+    /// <para>
+    /// This non-generic version uses <see cref="GenericToken"/> as the token type. 
+    /// </para>
+    /// </summary>
+    public abstract class EasyParser : EasyParser<GenericToken>
+    {
 
-            return "";
-        }
-
-        internal ParserSyntaxException SyntaxError(TokenType[] expectedTypes)
-        {
-            if (ErrorStack.Count > 0) return new ParserSyntaxException(ErrorStack.Peek(), CurrentToken);
-            return new ParserSyntaxException(expectedTypes, CurrentToken);
-        }
-        internal ParserSyntaxException SyntaxError(TokenType expectedType, string expectedValue = "")
-        {
-            if (ErrorStack.Count > 0) return new ParserSyntaxException(ErrorStack.Peek(), CurrentToken);
-            return new ParserSyntaxException(expectedType, expectedValue, CurrentToken);
-        }
-        internal ParserSyntaxException SyntaxError(TokenType[] expectedTypes, string[] expectedValues)
-        {
-            if (ErrorStack.Count > 0) return new ParserSyntaxException(ErrorStack.Peek(), CurrentToken);
-            return new ParserSyntaxException(expectedTypes, expectedValues, CurrentToken);
-        }
-        internal ParserSyntaxException SyntaxError(string message)
-        {
-            if (ErrorStack.Count > 0) return new ParserSyntaxException(ErrorStack.Peek(), CurrentToken);
-            return new ParserSyntaxException(message, CurrentToken);
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="message"></param>
-        /// <returns></returns>
-        internal ParserException EOFError(string message = "Unexpected end of file")
-        {
-            if (ErrorStack.Count > 0) return new ParserSyntaxException(ErrorStack.Peek(), CurrentToken);
-            return new ParserEOFException(message, CurrentTokenSafe);
-        }
     }
 }
