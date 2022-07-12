@@ -243,6 +243,10 @@ namespace GenericParsingLibrary
     /// </summary>
     public abstract class FastParser : FastParser<GenericToken>
     {
-
+        /// <summary>
+        /// Initialize a new <see cref="FastParser"/> with a list of <see cref="GenericToken"/> objects.
+        /// </summary>
+        /// <param name="tokens"></param>
+        public FastParser(List<GenericToken> tokens) : base(tokens) { }
     }
 }

@@ -2,11 +2,11 @@
 using System.Text;
 using GenericParsingLibrary;
 
+// Better way to do this?
+using IniKeyValueType = System.Collections.Generic.Dictionary<string, object>;
+using IniFileType = System.Collections.Generic.Dictionary<string, System.Collections.Generic.Dictionary<string, object>>;
 namespace IniParserExample
 {
-    // Better way to do this?
-    using IniKeyValueType = Dictionary<string, object>;
-    using IniFileType = Dictionary<string, Dictionary<string, object>>;
     public class IniFastParser : FastParser
     {
 
@@ -16,10 +16,7 @@ namespace IniParserExample
         /// Instantiate with a list of tokens.
         /// </summary>
         /// <param name="source"></param>
-        public IniFastParser(List<GenericToken> tokens)
-        {
-            Tokens = tokens;
-        }
+        public IniFastParser(List<GenericToken> tokens) : base(tokens) { }
         public IniFastParser(IniTokenizer tokenizer) : this(tokenizer.Tokens) { }
         
 

@@ -2,11 +2,11 @@
 using System.Text;
 using GenericParsingLibrary;
 
+using IniKeyValueType = System.Collections.Generic.Dictionary<string, object>;
+using IniFileType = System.Collections.Generic.Dictionary<string, System.Collections.Generic.Dictionary<string, object>>;
 namespace IniParserExample
 {
     // Better way to do this?
-    using IniKeyValueType = Dictionary<string, object>;
-    using IniFileType = Dictionary<string, Dictionary<string, object>>;
     public class IniParser : EasyParser
     {
 

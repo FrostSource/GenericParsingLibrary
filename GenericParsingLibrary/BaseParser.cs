@@ -162,6 +162,7 @@ namespace GenericParsingLibrary
         /// <inheritdoc/>
         public virtual void Parse()
         {
+            // TODO: Property to allow failing if not at end of tokens with default true?
             ParseTop();
         }
         /// <summary>
