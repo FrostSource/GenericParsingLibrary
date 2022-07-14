@@ -4,127 +4,127 @@ using GenericParsingLibrary;
 
 using IniKeyValueType = System.Collections.Generic.Dictionary<string, object>;
 using IniFileType = System.Collections.Generic.Dictionary<string, System.Collections.Generic.Dictionary<string, object>>;
-namespace IniParserExample
+namespace IniParserExample;
+
+// Better way to do this?
+public class IniParser : EasyParser
 {
-    // Better way to do this?
-    public class IniParser : EasyParser
+
+    public IniFileType? IniFile { get; private set; }
+
+    /// <summary>
+    /// Instantiate with a list of tokens.
+    /// </summary>
+    /// <param name="source"></param>
+    public IniParser(List<GenericToken> tokens)
     {
+        Tokens = tokens;
+    }
 
-        public IniFileType? IniFile { get; private set; }
+    protected override bool ParseTop()
+    {
+        //<file>    ::= { <section> }+
+        // We must parse one or more <section>
 
-        /// <summary>
-        /// Instantiate with a list of tokens.
-        /// </summary>
-        /// <param name="source"></param>
-        public IniParser(List<GenericToken> tokens)
+        var file = new IniFileType();
+
+        OneOrMore(() =>
         {
-            Tokens = tokens;
-        }
+            (var sectionName, IniKeyValueType sectionKeys) = ParseSection();
+            file.Add(sectionName, sectionKeys);
+        });
+        IniFile = file;
+        return true;
+    }
 
-        protected override bool ParseTop()
+    private (string sectionName, IniKeyValueType sectionKeys) ParseSection()
+    {
+        //<section> ::= "[" , <id> , "]" , <EOL> , { <pair> , <EOL> }*
+
+        var sectionKeys = new IniKeyValueType();
+
+        // Parse the section syntax
+        Eat(TokenType.Symbol, "[");
+        // This part also handles the <sctn_name> rule
+        // without creating a new method.
+        var nameBuilder = new StringBuilder();
+        OneOrMore(() =>
         {
-            //<file>    ::= { <section> }+
-            // We must parse one or more <section>
+            var name = ParseId();
+            nameBuilder.Append(name);
+        });
+        var sectionName = nameBuilder.ToString();
+        Eat(TokenType.Symbol, "]");
 
-            var file = new IniFileType();
+        // Parse end of line
+        ParseEOL();
 
-            OneOrMore(() =>
-            {
-                var (sectionName, sectionKeys) = ParseSection();
-                file.Add(sectionName, sectionKeys);
-            });
-            IniFile = file;
-            return true;
-        }
-
-        private (string sectionName, IniKeyValueType sectionKeys) ParseSection()
+        // Zero or more pairs
+        ZeroOrMore(() =>
         {
-            //<section> ::= "[" , <id> , "]" , <EOL> , { <pair> , <EOL> }*
-
-            var sectionKeys = new IniKeyValueType();
-
-            // Parse the section syntax
-            Eat(TokenType.Symbol, "[");
-            // This part also handles the <sctn_name> rule
-            // without creating a new method.
-            var nameBuilder = new StringBuilder();
-            OneOrMore(() =>
-            {
-                var name = ParseId();
-                nameBuilder.Append(name);
-            });
-            var sectionName = nameBuilder.ToString();
-            Eat(TokenType.Symbol, "]");
-
-            // Parse end of line
+            KeyValuePair<string, object> pair = ParsePair();
             ParseEOL();
+            // Add the pair after finishing all parsing in this delegate
+            sectionKeys.Add(pair.Key, pair.Value);
+        });
 
-            // Zero or more pairs
-            ZeroOrMore(() =>
+        // Return the data for the top method to handle
+        return (sectionName, sectionKeys);
+    }
+
+    private string ParseId()
+    {
+        //<id>      ::= [ \W | \D | "_" ] , { [ \W | \D | "_" ] }*
+        // The specifics are taken care of in the tokenizer
+        return Eat(TokenType.Identifier).Value;
+    }
+
+    private void ParseEOL()
+    {
+        //<EOL>       ::= [ { "\n" }+ | EOF ]
+        EitherOr(
+            () =>
             {
-                var pair = ParsePair();
-                ParseEOL();
-                // Add the pair after finishing all parsing in this delegate
-                sectionKeys.Add(pair.Key, pair.Value);
-            });
+                // Multiple lines are allowed between values.
+                OneOrMore(
+                    () => { Eat(TokenType.Symbol, "\n"); }
+                    );
+                return true;
+            }
+            ,
+            () => { return NextToken == null; }
+            );
+    }
 
-            // Return the data for the top method to handle
-            return (sectionName, sectionKeys);
-        }
-
-        private string ParseId()
-        {
-            //<id>      ::= [ \W | \D | "_" ] , { [ \W | \D | "_" ] }*
-            // The specifics are taken care of in the tokenizer
-            return Eat(TokenType.Identifier).Value;
-        }
-
-        private void ParseEOL()
-        {
-            //<EOL>       ::= [ { "\n" }+ | EOF ]
-            EitherOr(
-                () => {
-                    // Multiple lines are allowed between values.
-                    OneOrMore(
-                        () => { Eat(TokenType.Symbol, "\n"); }
-                        );
-                    return true;
-                    }
-                ,
-                () => { return NextToken == null; }
-                );
-        }
-
-        private KeyValuePair<string, object> ParsePair()
-        {
-            //<id> , "=" , <value>
-            // This rule method handles both <id> and <value> rules itself.
-            var key = Eat(TokenType.Identifier).Value;
-            Eat(TokenType.Symbol, "=");
-            object value = EitherOr<object>(
-                () =>
-                {
-                    return Eat(TokenType.String).Value;
-                }
-                ,
-                () =>
-                {
-                    return Eat(TokenType.Identifier).Value;
-                }
-                ,
-                () =>
-                {
-                    // whole and decimal numbers are double for our ini file
-                    return double.Parse(Eat(TokenType.Number).Value);
-                }
-                ,
-                () =>
-                {
-                    return Eat(TokenType.Keyword).Value.ToLower() == "true";
-                }
-                );
-            return new KeyValuePair<string, object>(key, value);
-        }
+    private KeyValuePair<string, object> ParsePair()
+    {
+        //<id> , "=" , <value>
+        // This rule method handles both <id> and <value> rules itself.
+        var key = Eat(TokenType.Identifier).Value;
+        Eat(TokenType.Symbol, "=");
+        var value = EitherOr<object>(
+            () =>
+            {
+                return Eat(TokenType.String).Value;
+            }
+            ,
+            () =>
+            {
+                return Eat(TokenType.Identifier).Value;
+            }
+            ,
+            () =>
+            {
+                // whole and decimal numbers are double for our ini file
+                return double.Parse(Eat(TokenType.Number).Value);
+            }
+            ,
+            () =>
+            {
+                return Eat(TokenType.Keyword).Value.ToLower() == "true";
+            }
+            );
+        return new KeyValuePair<string, object>(key, value);
     }
 }
 

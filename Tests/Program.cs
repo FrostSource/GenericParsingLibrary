@@ -2,12 +2,12 @@
 using IniParserExample;
 using System.Diagnostics;
 
-bool GENERATE        = false;
+bool GENERATE = false;
 bool GENERATE_INSANE = true;
-bool PARSE           = true;
-bool PRINT_SECTIONS  = false;
-bool PRINT_VALUES    = false;
-bool FAST            = true;
+bool PARSE = true;
+bool PRINT_SECTIONS = false;
+bool PRINT_VALUES = false;
+bool FAST = true;
 bool COMPARE_PARSERS = true;
 
 var t = new IniTokenizer("[ ]");
