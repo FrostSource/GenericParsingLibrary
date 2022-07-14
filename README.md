@@ -1,4 +1,4 @@
 # GenericParsingLibrary
-C# library for creating language parsers and tokenizers.
+C# library for creating language parsers.
 
-Still an early work-in-progress. Names and methods might change.
+Made for personal use and is still an early work-in-progress. Names and methods might change. No proper support will be provided for now.
